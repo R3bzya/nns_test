@@ -1,19 +1,25 @@
 <?php
 
-use Illuminate\Http\Request;
+use App\Http\Controllers\Employee\EmployeeController;
+use App\Http\Controllers\Employee\EmployeeExportController;
+use App\Http\Controllers\User\UserAuthController;
+use App\Http\Middleware\Employee\EmployeeSelfTreeMiddleware;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
-|
-*/
+Route::group(['prefix' => 'auth/user'], function () {
+    Route::post('/register', [UserAuthController::class, 'register']);
+    Route::post('/login', [UserAuthController::class, 'login']);
+});
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+Route::group(['prefix' => 'employees', 'middleware' => ['auth:api']], function () {
+    Route::post('/create', [EmployeeController::class, 'create']);
+
+    Route::group(['middleware' => EmployeeSelfTreeMiddleware::class], function () {
+        Route::group(['prefix' => '{employee}'], function () {
+            Route::get('/descendants', [EmployeeController::class, 'descendants']);
+            Route::get('/children', [EmployeeController::class, 'children']);
+            Route::get('/children-export', [EmployeeExportController::class, 'children']);
+            Route::get('/descendants-export', [EmployeeExportController::class, 'descendants']);
+        });
+    });
 });
